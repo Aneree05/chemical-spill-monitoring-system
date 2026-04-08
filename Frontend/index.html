@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chemical Monitoring Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://kit.fontawesome.com/4a3b1f73a2.js" crossorigin="anonymous"></script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root {
+            --surface-bg: rgba(255, 255, 255, 0.85);
+            --surface-border: rgba(255, 255, 255, 0.4);
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --accent-primary: #0ea5e9;
+            --bg-blur: blur(20px);
+            --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Inter', sans-serif;
+            background: url('bg-clean.png') no-repeat center center fixed;
+            background-size: cover;
+            color: var(--text-main);
+            overflow-x: hidden;
+        }
+
+        /* Surface utility for clean glass */
+        .surface {
+            background: var(--surface-bg);
+            backdrop-filter: var(--bg-blur);
+            -webkit-backdrop-filter: var(--bg-blur);
+            border: 1px solid var(--surface-border);
+            border-radius: 12px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        /* NAVBAR */
+        .navbar {
+            height: 65px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 30px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: var(--text-main);
+            background: rgba(255, 255, 255, 0.95);
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            box-shadow: var(--shadow-sm);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+        
+        .navbar span {
+            color: var(--accent-primary);
+        }
+
+        /* LAYOUT */
+        .main {
+            display: flex;
+            padding: 24px;
+            gap: 24px;
+            min-height: calc(100vh - 110px);
+        }
+
+        /* SIDEBAR */
+        .sidebar {
+            width: 240px;
+            padding: 24px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            color: var(--text-muted);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: 500;
+        }
+
+        .nav-item i {
+            font-size: 1.1rem;
+            width: 24px;
+            text-align: center;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            background: rgba(14, 165, 233, 0.08); /* light primary tint */
+            color: var(--accent-primary);
+        }
+
+        /* CONTENT */
+        .content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        /* STATUS HEADER */
+        .status-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 24px;
+        }
+
+        .status-header {
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin: 0;
+            color: var(--text-main);
+        }
+
+        #status {
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background: #e2e8f0;
+            color: #475569;
+        }
+
+        /* CARDS */
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 24px;
+        }
+
+        .card {
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .card h4 {
+            margin: 0;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            z-index: 2;
+        }
+
+        .card h2 {
+            margin: 8px 0 0;
+            font-size: 2.2rem;
+            color: var(--text-main);
+            font-weight: 700;
+            z-index: 2;
+        }
+        
+        .card i {
+            position: absolute;
+            right: 24px;
+            bottom: 24px;
+            font-size: 3.5rem;
+            opacity: 0.05;
+            color: var(--text-main);
+            z-index: 1;
+        }
+
+        /* CHART GRID */
+        .charts {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 24px;
+        }
+
+        .chart-box {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .chart-box > i.bg-icon {
+            position: absolute;
+            right: 24px;
+            bottom: 24px;
+            font-size: 8rem;
+            opacity: 0.03;
+            color: var(--text-main);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .chart-box h4 {
+            margin: 0 0 16px 0;
+            color: var(--text-main);
+            font-weight: 600;
+            font-size: 1.05rem;
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 250px;
+            width: 100%;
+            z-index: 2;
+        }
+
+        canvas {
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        /* ALERT */
+        #alertBox {
+            display: none;
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background: #ef4444;
+            color: white;
+            text-align: center;
+            padding: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+        }
+
+        .danger {
+            border-color: rgba(239, 68, 68, 0.4) !important;
+            box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.1) !important;
+        }
+
+        /* USER DROPDOWN */
+        .user-profile {
+            position: relative;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+        .user-profile:hover { background: rgba(0,0,0,0.04); }
+        
+        .user-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 16px;
+            min-width: 220px;
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 12px;
+            box-shadow: var(--shadow-md);
+            border: 1px solid rgba(0,0,0,0.05);
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+            z-index: 100;
+        }
+        .user-dropdown.show {
+            display: flex;
+            animation: slideDown 0.2s ease;
+        }
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .dropdown-header { padding: 16px; background: rgba(0,0,0,0.02); }
+        .dropdown-header h4 { margin: 0 0 4px 0; color: var(--text-main); font-size: 0.95rem; font-weight: 600; }
+        .dropdown-header p { margin: 0; color: var(--text-muted); font-size: 0.8rem; font-weight: 400; }
+        .dropdown-divider { height: 1px; background: rgba(0,0,0,0.05); }
+        .dropdown-item {
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text-main);
+            transition: background 0.2s;
+        }
+        .dropdown-item:hover { background: rgba(14, 165, 233, 0.08); color: var(--accent-primary); }
+        .dropdown-item i { width: 16px; text-align: center; color: var(--text-muted); font-size: 1rem; }
+        .dropdown-item:hover i { color: var(--accent-primary); }
+        .dropdown-item.danger-item:hover { background: #fee2e2; color: #ef4444; }
+        .dropdown-item.danger-item:hover i { color: #ef4444; }
+
+        /* TAB SYSTEM */
+        .tab-pane {
+            display: none;
+            flex-direction: column;
+            gap: 24px;
+            animation: fadeIn 0.3s ease;
+        }
+        .tab-pane.active {
+            display: flex;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* TABLES */
+        .table-container {
+            width: 100%;
+            overflow-x: auto;
+            padding: 20px;
+        }
+        .table-container h3 {
+            margin-top: 0;
+            margin-bottom: 16px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+        th, td {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--surface-border);
+        }
+        th {
+            font-weight: 600;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        tbody tr:hover {
+            background: rgba(255, 255, 255, 0.4);
+        }
+
+        /* BADGES */
+        .badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .badge.critical { background: #fee2e2; color: #ef4444; }
+        .badge.warning { background: #fef3c7; color: #f59e0b; }
+        .badge.normal { background: #d1fae5; color: #10b981; }
+
+        /* SETTINGS */
+        .settings-card { padding: 0; }
+        .settings-group {
+            padding: 24px;
+            border-bottom: 1px solid var(--surface-border);
+        }
+        .settings-group:last-child { border-bottom: none; }
+        .settings-group h3 { margin-top: 0; margin-bottom: 16px; }
+        .setting-item {
+            display: flex; justify-content: space-between; align-items: center; padding: 10px 0;
+        }
+        .setting-info h4 { margin: 0; font-size: 1rem; color: var(--text-main); font-weight: 600; }
+        .setting-info p { margin: 4px 0 0; font-size: 0.85rem; color: var(--text-muted); }
+        
+        .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #cbd5e1; transition: .3s; border-radius: 24px;
+        }
+        .slider:before {
+            position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px;
+            background-color: white; transition: .3s; border-radius: 50%; box-shadow: var(--shadow-sm);
+        }
+        input:checked + .slider { background-color: var(--accent-primary); }
+        input:checked + .slider:before { transform: translateX(20px); }
+
+        .btn-outline {
+            background: transparent; border: 1px solid var(--accent-primary); color: var(--accent-primary);
+            padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; transition: all 0.2s;
+        }
+        .btn-outline:hover { background: var(--accent-primary); color: white; }
+
+        .btn-danger {
+            background: #ef4444; border: none; color: white;
+            padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600;
+            transition: background 0.2s;
+        }
+        .btn-danger:hover { background: #dc2626; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4); }
+
+        /* PROTOCOLS */
+        .protocol-list { display: grid; gap: 16px; }
+        .protocol-item {
+            display: flex; align-items: flex-start; gap: 16px; padding: 20px;
+            border-radius: 10px; background: rgba(255,255,255,0.5);
+            border: 1px solid rgba(255,255,255,0.8); transition: box-shadow 0.2s;
+        }
+        .protocol-item:hover { box-shadow: var(--shadow-sm); background: rgba(255,255,255,0.7); }
+        .protocol-item i { font-size: 1.8rem; color: var(--accent-primary); }
+        .protocol-item h4 { margin: 0 0 6px 0; font-size: 1.1em; color: var(--text-main); font-weight: 600; }
+        .protocol-item p { margin: 0; color: var(--text-muted); font-size: 0.95rem; line-height: 1.5; }
+
+        /* RESPONSIVE */
+        @media(max-width: 900px){
+            .main {
+                flex-direction: column;
+                padding: 16px;
+            }
+            .sidebar {
+                width: auto;
+                flex-direction: row;
+                justify-content: space-around;
+                padding: 12px;
+            }
+            .nav-item {
+                padding: 8px;
+            }
+            .nav-item span {
+                display: none;
+            }
+            .nav-item i {
+                font-size: 1.4rem;
+                width: auto;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div id="alertBox">
+    <i class="fas fa-exclamation-triangle"></i> CRITICAL FACILITY ALERT
+</div>
+
+<div class="navbar">
+    <div><i class="fas fa-flask"></i> <span>AeroChem</span> Diagnostics</div>
+    
+    <!-- ADMIN USER PROFILE -->
+    <div class="user-profile" id="user-profile-btn">
+        <i class="fas fa-user-circle" style="font-size: 1.2rem;"></i> <span>Admin User</span>
+        
+        <div class="user-dropdown surface" id="user-dropdown">
+            <div class="dropdown-header">
+                <h4>System Administrator</h4>
+                <p>admin@aerochem.io</p>
+            </div>
+            <div class="dropdown-divider"></div>
+            <div class="dropdown-item"><i class="fas fa-id-badge"></i> View Profile</div>
+            <div class="dropdown-item"><i class="fas fa-users-cog"></i> Manage Users</div>
+            <div class="dropdown-item"><i class="fas fa-shield-alt"></i> Security Center</div>
+            <div class="dropdown-divider"></div>
+            <div class="dropdown-item danger-item"><i class="fas fa-sign-out-alt"></i> Logout Engine</div>
+        </div>
+    </div>
+</div>
+
+<div class="main">
+
+    <div class="sidebar surface">
+        <div class="nav-item active" data-tab="tab-dashboard">
+            <i class="fas fa-chart-line"></i> <span>Dashboard Overview</span>
+        </div>
+        <div class="nav-item" data-tab="tab-safety">
+            <i class="fas fa-shield-alt"></i> <span>Safety Protocols</span>
+        </div>
+        <div class="nav-item" data-tab="tab-alerts">
+            <i class="fas fa-bell"></i> <span>Alerts History</span>
+        </div>
+        <div class="nav-item" data-tab="tab-logs">
+            <i class="fas fa-database"></i> <span>Data Logs</span>
+        </div>
+        <div class="nav-item" data-tab="tab-settings">
+            <i class="fas fa-cog"></i> <span>Settings</span>
+        </div>
+    </div>
+
+    <div class="content">
+
+        <!-- DASHBOARD TAB -->
+        <div id="tab-dashboard" class="tab-pane active">
+            <div class="status-container surface">
+                <h2 class="status-header">Facility Status</h2>
+                <div id="status">Loading...</div>
+            </div>
+
+            <!-- CARDS -->
+            <div class="cards">
+                <div class="card surface">
+                    <h4>Toxic Gas Level</h4>
+                    <h2 id="gas">-</h2>
+                    <i class="fas fa-cloud"></i>
+                </div>
+
+                <div class="card surface">
+                    <h4>Reactor Core Temp</h4>
+                    <h2 id="temp">-</h2>
+                    <i class="fas fa-thermometer-half"></i>
+                </div>
+
+                <div class="card surface">
+                    <h4>Solvent pH Level</h4>
+                    <h2 id="ph">-</h2>
+                    <i class="fas fa-tint"></i>
+                </div>
+            </div>
+
+            <!-- CHARTS -->
+            <div class="charts">
+
+                <div class="chart-box surface">
+                    <i class="fas fa-wind bg-icon"></i>
+                    <h4><i class="fas fa-smog" style="color:var(--text-muted)"></i> Gas Concentration Trend</h4>
+                    <div class="chart-container">
+                        <canvas id="gasChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-box surface">
+                    <i class="fas fa-fire bg-icon"></i>
+                    <h4><i class="fas fa-temperature-high" style="color:var(--text-muted)"></i> Temperature Fluctuation</h4>
+                    <div class="chart-container">
+                        <canvas id="tempChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-box surface">
+                    <i class="fas fa-flask bg-icon"></i>
+                    <h4><i class="fas fa-vial" style="color:var(--text-muted)"></i> pH Balance Tracking</h4>
+                    <div class="chart-container">
+                        <canvas id="phChart"></canvas>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- SAFETY PROTOCOLS TAB -->
+        <div id="tab-safety" class="tab-pane">
+            <div class="status-container surface">
+                <h2 class="status-header">Safety Protocols & Procedures</h2>
+                <button class="btn-danger"><i class="fas fa-power-off"></i> EMERGENCY SHUTDOWN</button>
+            </div>
+            <div class="protocol-list">
+                <div class="protocol-item surface">
+                    <i class="fas fa-mask"></i>
+                    <div>
+                        <h4>Gas Leak Containment</h4>
+                        <p>In the event of toxic gas levels exceeding 50ppm, immediate evacuation of Sector 4 is required. Seal primary blast doors and engage local exhaust ventilation (LEV). Do not re-enter without Level A hazmat suit.</p>
+                    </div>
+                </div>
+                <div class="protocol-item surface">
+                    <i class="fas fa-fire-extinguisher"></i>
+                    <div>
+                        <h4>Core Temperature Crisis</h4>
+                        <p>If reactor core temperature spikes beyond 95°C, automated coolant release will initiate. Manual override for secondary liquid nitrogen flush should be prepared if temperature does not drop within 60 seconds.</p>
+                    </div>
+                </div>
+                <div class="protocol-item surface">
+                    <i class="fas fa-biohazard"></i>
+                    <div>
+                        <h4>Spill Response (Acidic/Basic)</h4>
+                        <p>Neutralize spills using emergency neutralizing agents located at stations A through F. Isolate the spill path from active drainage systems. Notify the Environmental Health and Safety off-site team immediately.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ALERTS HISTORY TAB -->
+        <div id="tab-alerts" class="tab-pane">
+            <div class="table-container surface">
+                <h3>Recent Alerts</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Sector</th>
+                            <th>Event Type</th>
+                            <th>Severity</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>10:42 AM</td>
+                            <td>Reactor B</td>
+                            <td>Temperature Spike (92°C)</td>
+                            <td><span class="badge warning">Warning</span></td>
+                            <td>Resolved</td>
+                        </tr>
+                        <tr>
+                            <td>09:15 AM</td>
+                            <td>Storage A</td>
+                            <td>Toxic Gas Level (45ppm)</td>
+                            <td><span class="badge warning">Warning</span></td>
+                            <td>Resolved</td>
+                        </tr>
+                        <tr>
+                            <td>Yesterday, 14:30</td>
+                            <td>Valves C-4</td>
+                            <td>Pressure Anomaly</td>
+                            <td><span class="badge critical">Critical</span></td>
+                            <td>Maintained</td>
+                        </tr>
+                        <tr>
+                            <td>Yesterday, 08:00</td>
+                            <td>Main Lab</td>
+                            <td>System Bootup</td>
+                            <td><span class="badge normal">Info</span></td>
+                            <td>Complete</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- DATA LOGS TAB -->
+        <div id="tab-logs" class="tab-pane">
+            <div class="table-container surface">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                    <h3 style="margin: 0;">Raw Sensor Readings</h3>
+                    <button class="btn-outline"><i class="fas fa-download"></i> Export CSV</button>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>Gas (ppm)</th>
+                            <th>Temp (°C)</th>
+                            <th>pH Level</th>
+                            <th>Overall Risk</th>
+                        </tr>
+                    </thead>
+                    <tbody id="data-logs-body">
+                        <!-- Populated by JS -->
+                        <tr>
+                            <td colspan="5" style="text-align: center; color: var(--text-muted);">Awaiting data...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- SETTINGS TAB -->
+        <div id="tab-settings" class="tab-pane">
+            <div class="settings-card surface">
+                <div class="settings-group">
+                    <h3>Notification Preferences</h3>
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <h4>Critical Audible Alarms</h4>
+                            <p>Play loud siren sounds for CRITICAL facility states</p>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" checked id="setting-audio">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <h4>Email Alerts</h4>
+                            <p>Send emergency emails to the response team</p>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="settings-group">
+                    <h3>System Configuration</h3>
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <h4>Auto-Refresh Data</h4>
+                            <p>Pull sensor metrics periodically</p>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" checked id="setting-refresh">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <h4>Dark Mode Interface</h4>
+                            <p>Switch to high-contrast dark theme</p>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<audio id="alarmSound" src="https://www.soundjay.com/alarm/alarm-clock-warning-3.mp3"></audio>
+
+<script src="script.js"></script>
+
+</body>
+</html>
