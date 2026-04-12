@@ -2,19 +2,20 @@ import requests
 import random
 import time
 
-URL = "http://127.0.0.1:8000/data"
+URL = "http://localhost:8000/api/spills"
 
 while True:
     data = {
-        "gas": random.uniform(20, 100),
-        "temperature": random.uniform(20, 80),
-        "ph": random.uniform(5, 9)
+        "location": "Plant 1",
+        "gas_level": round(random.uniform(10, 100), 2),
+        "temperature": round(random.uniform(20, 80), 2),
+        "ph": round(random.uniform(5, 9), 2)
     }
 
     try:
-        requests.post(URL, json=data)
+        res = requests.post(URL, json=data)
         print("Sent:", data)
-    except:
-        print("Error sending data")
+    except Exception as e:
+        print("Error:", e)
 
-    time.sleep(3)
+    time.sleep(5)  # every 5 seconds
