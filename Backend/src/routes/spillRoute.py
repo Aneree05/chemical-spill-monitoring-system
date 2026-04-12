@@ -14,7 +14,7 @@ def create_spill(spill: Spill):
 # GET all spills
 @router.get("/spills")
 def get_spills():
-    latest = db.spills.find().sort("timestamp", -1).limit(1)
+    latest = db.spills.find().sort("_id", -1).limit(1)
     latest = list(latest)
 
     if not latest:
