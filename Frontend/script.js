@@ -7,7 +7,7 @@ Chart.defaults.font.family = "'Inter', sans-serif";
 
 async function fetchData() {
     try {
-        const res = await fetch("http://3.7.48.90:8000/api/spills");
+        const res = await fetch("http://127.0.0.1:8000/api/spills");
         const data = await res.json();
 
         if (!data) {
